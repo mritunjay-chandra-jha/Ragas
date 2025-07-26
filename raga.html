@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ragatimecycle</title>
+    <!-- Chosen Palette: Warm Neutrals -->
+    <!-- Application Structure Plan: A dashboard-style, single-page application. The core interaction is a set of filter buttons for the four phases of the day (Morning, Afternoon, Evening, Night). Selecting a phase dynamically updates a grid of raga 'cards' and a detailed description panel. This non-linear, exploratory structure is chosen over a simple linear document to empower users to directly access the information they are interested in, enhancing engagement and learning. The design includes an introductory accordion for foundational concepts and a summary chart to provide at-a-glance insights, making complex information digestible. -->
+    <!-- Visualization & Content Choices: Report Info: Raga lists per time phase -> Goal: Organize/Explore -> Viz/Presentation: Interactive filter buttons and a grid of clickable raga cards -> Interaction: Click to filter and view details -> Justification: More engaging and user-directed than static tables. Report Info: Core concepts (Raga, Samay Siddhanta) -> Goal: Inform -> Viz/Presentation: Accordion panels -> Interaction: Click to expand -> Justification: Hides complexity by default, cleaning up the UI. Report Info: Number of ragas per phase -> Goal: Compare -> Viz/Presentation: Bar Chart -> Interaction: Hover for tooltips -> Justification: Provides a quick quantitative summary -> Library/Method: Chart.js/Canvas. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F8F5F2;
+            color: #333;
+        }
+
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 400px;
+            }
+        }
+
+        .active-phase {
+            background-color: #D57A66 !important;
+            color: #FFFFFF !important;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+
+        .active-raga {
+            border-color: #D57A66 !important;
+            background-color: #FEFBF6;
+            transform: translateY(-2px);
+        }
+
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-in-out;
+        }
+
+        .accordion-button[aria-expanded="true"]+.accordion-content {
+            max-height: 1000px;
+        }
+
+        .accordion-button[aria-expanded="true"] .accordion-icon {
+            transform: rotate(180deg);
+        }
+    </style>
+</head>
+
+<body class="bg-[#F8F5F2] text-stone-800">
+
+    <div class="container mx-auto p-4 sm:p-6 lg:p-8">
+
+        <header class="text-center mb-10">
+            <h1 class="text-3xl md:text-5xl font-bold text-[#4A4A4A] mb-2">The Raga Time Cycle</h1>
+            <p class="text-lg md:text-xl text-stone-600">An Interactive Guide to Hindustani Classical Music</p>
+        </header>
+
+        <main>
+            <section id="introduction" class="mb-12 bg-white/50 rounded-xl shadow-sm p-6 md:p-8">
+                <h2 class="text-2xl font-bold text-center text-[#4A4A4A] mb-6">Understanding the Theory</h2>
+                <div class="space-y-4 max-w-4xl mx-auto">
+                    <div class="accordion-item bg-white rounded-lg border border-stone-200">
+                        <button
+                            class="accordion-button w-full flex justify-between items-center text-left p-4 font-semibold text-lg text-stone-700 focus:outline-none"
+                            aria-expanded="false">
+                            <span>What is a Raga?</span>
+                            <span class="accordion-icon transition-transform duration-300 transform">&#9660;</span>
+                        </button>
+                        <div class="accordion-content">
+                            <div class="p-4 pt-0 text-stone-600">
+                                <p>In Indian classical music, a raga is a sophisticated melodic framework, far more than
+                                    a simple scale. It's defined by specific formulas for ascending and descending
+                                    notes, characteristic melodic phrases, and a unique emotional personality. The
+                                    purpose of these rules is not to constrain but to create a rich blueprint for
+                                    improvisation, allowing musicians to evoke specific, detailed moods.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item bg-white rounded-lg border border-stone-200">
+                        <button
+                            class="accordion-button w-full flex justify-between items-center text-left p-4 font-semibold text-lg text-stone-700 focus:outline-none"
+                            aria-expanded="false">
+                            <span>The Time Theory (Samay Siddhanta)</span>
+                            <span class="accordion-icon transition-transform duration-300 transform">&#9660;</span>
+                        </button>
+                        <div class="accordion-content">
+                            <div class="p-4 pt-0 text-stone-600">
+                                <p>The Raga Time Theory, or "Samay Siddhanta," is a core principle of Hindustani music.
+                                    It associates specific ragas with particular times of the day (and sometimes
+                                    seasons) to maximize their emotional impact, or *rasa*. The belief is that a raga
+                                    reaches its peak beauty and splendor when performed in its designated time slot,
+                                    aligning the music's vibrations with the natural energy of the environment and the
+                                    listener's own biological rhythms.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item bg-white rounded-lg border border-stone-200">
+                        <button
+                            class="accordion-button w-full flex justify-between items-center text-left p-4 font-semibold text-lg text-stone-700 focus:outline-none"
+                            aria-expanded="false">
+                            <span>Guiding Principles of Classification</span>
+                            <span class="accordion-icon transition-transform duration-300 transform">&#9660;</span>
+                        </button>
+                        <div class="accordion-content">
+                            <div class="p-4 pt-0 text-stone-600 space-y-2">
+                                <p><strong>Swaras (Notes):</strong> The type of notes used—natural (*shuddha*), flat
+                                    (*komal*), or sharp (*teevra*)—is a key indicator. For example, ragas with *Komal
+                                    Re* (flat 2nd) and *Komal Dha* (flat 6th) are performed at twilight (dawn and dusk).
+                                </p>
+                                <p><strong>Vadi & Samvadi:</strong> The dominant (*vadi*) and sub-dominant (*samvadi*)
+                                    notes determine a raga's melodic center. If the *vadi* is in the lower half of the
+                                    octave (*purvanga*), the raga is typically performed from noon to midnight. If it's
+                                    in the upper half (*uttaranga*), it's performed from midnight to noon.</p>
+                                <p><strong>Rasa (Mood):</strong> Each raga's emotional character is aligned with the
+                                    time of day. Morning ragas are often devotional and calm, afternoon ragas are
+                                    brighter, evening ragas are romantic or reflective, and night ragas are deep and
+                                    introspective.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="raga-explorer" class="mb-12">
+                <h2 class="text-2xl font-bold text-center text-[#4A4A4A] mb-6">Explore Ragas by Time of Day</h2>
+                <div id="phase-filters" class="flex flex-wrap justify-center gap-2 sm:gap-4 mb-8">
+                </div>
+
+                <div class="bg-white/50 rounded-xl shadow-sm p-4 md:p-8 min-h-[400px]">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div id="raga-list-container">
+                            <h3 class="text-xl font-semibold text-stone-700 mb-4" id="raga-list-title"></h3>
+                            <div id="raga-list"
+                                class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 gap-3">
+                            </div>
+                        </div>
+                        <div id="raga-details" class="bg-white rounded-lg p-6 border border-stone-200">
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="visualization" class="mb-12">
+                <h2 class="text-2xl font-bold text-center text-[#4A4A4A] mb-6">Distribution of Ragas</h2>
+                <div class="bg-white/50 rounded-xl shadow-sm p-6 md:p-8">
+                    <p class="text-center text-stone-600 max-w-3xl mx-auto mb-6">This chart illustrates the number of
+                        prominent ragas associated with each of the four major phases of the day, based on the
+                        classifications in the source report. It provides a visual summary of how musical energy and
+                        mood are distributed across the 24-hour cycle in Hindustani music.</p>
+                    <div class="chart-container">
+                        <canvas id="ragaChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <section id="exceptions" class="mb-12">
+                <h2 class="text-2xl font-bold text-center text-[#4A4A4A] mb-6">Flexibility and Modern Practice</h2>
+                <div class="grid md:grid-cols-1 lg:grid-cols-2 gap-6 max-w-5xl mx-auto">
+                    <div class="bg-white/50 rounded-xl shadow-sm p-6 border border-stone-200/50">
+                        <h3 class="font-bold text-lg text-stone-700 mb-2">Beyond Time Constraints</h3>
+                        <p class="text-stone-600">While the Time Theory is fundamental, its strictness has relaxed in
+                            the modern era of concerts and recordings. Some ragas, like the morning raga <span
+                                class="font-semibold">Bhairavi</span>, are often sung at the end of any concert,
+                            regardless of the hour. Similarly, the evening raga <span class="font-semibold">Yaman</span>
+                            is frequently used to open concerts. This shows the adaptability of the tradition.</p>
+                    </div>
+                    <div class="bg-white/50 rounded-xl shadow-sm p-6 border border-stone-200/50">
+                        <h3 class="font-bold text-lg text-stone-700 mb-2">The Artist's Mastery</h3>
+                        <p class="text-stone-600">Ultimately, a master musician can transcend time restrictions. Their
+                            skill and emotional depth can evoke a raga's intended mood at any time of day. Legends of
+                            artists like Tansen bringing rain with a monsoon raga illustrate that the performer's
+                            mastery is the ultimate force that breathes life into the music, making its impact timeless.
+                        </p>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer class="text-center mt-12 pt-6 border-t border-stone-300">
+            <p class="text-sm text-stone-500">An interactive visualization based on the report "The Raga Time Cycle".
+            </p>
+        </footer>
+    </div>
+
+    <script>
+        const ragaData = {
+            morning: {
+                title: "Morning Ragas (4 AM - 1 PM)",
+                icon: '🌅',
+                description: "This extensive phase covers pre-dawn tranquility to the bright late morning. Ragas here are generally calm, meditative, and devotional, reflecting nature's awakening. They evoke introspection and purity, aligning with the stillness of the early hours.",
+                ragas: [
+                    { name: "Lalit" }, { name: "Bhatiyar" }, { name: "Sohini" }, { name: "Paraj" }, { name: "Vibhas" }, { name: "Kalingada" },
+                    { name: "Bhairav" }, { name: "Todi" }, { name: "Ahir Bhairav" }, { name: "Jogia" }, { name: "Ramkali" }, { name: "Nat Bhairav" },
+                    { name: "Jaunpuri" }, { name: "Bilawal" }, { name: "Deshkar" }, { name: "Asavari" }
+                ]
+            },
+            afternoon: {
+                title: "Afternoon Ragas (1 PM - 4 PM)",
+                icon: '☀️',
+                description: "Corresponding to the peak of the day, these ragas express brightness, warmth, and an energetic quality. The Sarang family of ragas, often performed at midday, is said to evoke the scorching heat of the sun, with compositions reflecting an attunement to nature.",
+                ragas: [
+                    { name: "Shuddha Sarang" }, { name: "Brindavani Sarang" }, { name: "Gaud Sarang" },
+                    { name: "Bhimpalasi" }, { name: "Multani" }, { name: "Pilu" }
+                ]
+            },
+            evening: {
+                title: "Evening Ragas (4 PM - 10 PM)",
+                icon: '🌇',
+                description: "This phase marks the transition from day to night. Ragas here are often reflective, contemplative, romantic, or devotional, aligning with the fading light. Musically, the sharp fourth note (*Teevra Madhyam*) often takes center stage.",
+                ragas: [
+                    { name: "Marwa" }, { name: "Shree" }, { name: "Poorvi" }, { name: "Puriya Dhanashri" }, { name: "Patdeep" },
+                    { name: "Yaman" }, { name: "Hameer" }, { name: "Shuddha Kalyan" }, { name: "Bhupali" }, { name: "Kedar" }, { name: "Khamaj" },
+                    { name: "Jayjaiwanti" }, { name: "Jog" }, { name: "Hamsadhwani" }, { name: "Rageshri" }, { name: "Durga" },
+                    { name: "Bihag" }, { name: "Kamod" }, { name: "Chhayanat" }, { name: "Desh" }, { name: "Tilak Kamod" }
+                ]
+            },
+            night: {
+                title: "Night Ragas (10 PM - 4 AM)",
+                icon: '🌙',
+                description: "The ragas of this phase are typically deep, slow, and heavy in nature, designed to evoke introspection, mystery, or longing. As the night progresses towards dawn, some ragas can revert to a devotional mood, symbolizing hope for the coming day.",
+                ragas: [
+                    { name: "Malkauns" }, { name: "Darbari Kanada" }, { name: "Bihag" }, { name: "Shankara" }, { name: "Adana" },
+                    { name: "Bageshri" }, { name: "Chandrakauns" }, { name: "Basant" }, { name: "Sohini" }, { name: "Paraj" }
+                ]
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            let currentPhase = 'morning';
+            let currentRaga = null;
+
+            const phaseFiltersContainer = document.getElementById('phase-filters');
+            const ragaListContainer = document.getElementById('raga-list');
+            const ragaListTitle = document.getElementById('raga-list-title');
+            const ragaDetailsContainer = document.getElementById('raga-details');
+
+            function renderPhaseFilters() {
+                Object.keys(ragaData).forEach(phase => {
+                    const data = ragaData[phase];
+                    const button = document.createElement('button');
+                    button.className = `phase-filter-btn px-4 py-2 text-lg font-semibold rounded-full transition-all duration-300 bg-white border-2 border-transparent hover:border-stone-400`;
+                    button.textContent = `${data.icon} ${data.title.split(' ')[0]}`;
+                    button.dataset.phase = phase;
+                    if (phase === currentPhase) {
+                        button.classList.add('active-phase');
+                    }
+                    phaseFiltersContainer.appendChild(button);
+                });
+            }
+
+            function renderRagaList(phase) {
+                const data = ragaData[phase];
+                ragaListTitle.textContent = data.title;
+                ragaListContainer.innerHTML = '';
+                data.ragas.forEach(raga => {
+                    const ragaCard = document.createElement('button');
+                    ragaCard.className = 'raga-card text-center p-3 bg-white rounded-lg border-2 border-stone-200 hover:border-stone-400 transition-all duration-200 focus:outline-none';
+                    ragaCard.textContent = raga.name;
+                    ragaCard.dataset.raga = raga.name;
+                    if (raga.name === currentRaga) {
+                        ragaCard.classList.add('active-raga');
+                    }
+                    ragaListContainer.appendChild(ragaCard);
+                });
+            }
+
+            function renderDetails(phase, ragaName = null) {
+                const phaseData = ragaData[phase];
+                let html = '';
+                if (ragaName) {
+                    const raga = phaseData.ragas.find(r => r.name === ragaName);
+                    html = `
+                        <h4 class="text-2xl font-bold text-[#D57A66] mb-3">${raga.name}</h4>
+                        <p class="text-stone-600 mb-2">Part of the <strong>${phaseData.title.split('(')[0].trim()}</strong> collection.</p>
+                        <p class="text-stone-600">${phaseData.description}</p>
+                    `;
+                } else {
+                    html = `
+                        <h4 class="text-2xl font-bold text-[#D57A66] mb-3">${phaseData.title}</h4>
+                        <p class="text-stone-600">${phaseData.description}</p>
+                        <p class="mt-4 text-sm text-stone-500">Select a raga from the list to see more specific details.</p>
+                    `;
+                }
+                ragaDetailsContainer.innerHTML = html;
+            }
+
+            function updateView() {
+                renderRagaList(currentPhase);
+                renderDetails(currentPhase, currentRaga);
+
+                document.querySelectorAll('.phase-filter-btn').forEach(btn => {
+                    btn.classList.toggle('active-phase', btn.dataset.phase === currentPhase);
+                });
+                document.querySelectorAll('.raga-card').forEach(card => {
+                    card.classList.toggle('active-raga', card.dataset.raga === currentRaga);
+                });
+            }
+
+            phaseFiltersContainer.addEventListener('click', (e) => {
+                const button = e.target.closest('.phase-filter-btn');
+                if (button) {
+                    currentPhase = button.dataset.phase;
+                    currentRaga = null;
+                    updateView();
+                }
+            });
+
+            ragaListContainer.addEventListener('click', (e) => {
+                const card = e.target.closest('.raga-card');
+                if (card) {
+                    currentRaga = card.dataset.raga;
+                    updateView();
+                }
+            });
+
+            const accordionButtons = document.querySelectorAll('.accordion-button');
+            accordionButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const isExpanded = button.getAttribute('aria-expanded') === 'true';
+                    button.setAttribute('aria-expanded', !isExpanded);
+                });
+            });
+
+            function createChart() {
+                const ctx = document.getElementById('ragaChart').getContext('2d');
+                const labels = Object.keys(ragaData).map(phase => ragaData[phase].title.split(' ')[0]);
+                const data = Object.keys(ragaData).map(phase => ragaData[phase].ragas.length);
+
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Number of Prominent Ragas',
+                            data: data,
+                            backgroundColor: ['#E8C8B4', '#D57A66', '#B85C4D', '#5A3E36'],
+                            borderColor: ['#D1B29F', '#C16C5A', '#A45244', '#4F362F'],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Count of Ragas'
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function (context) {
+                                        let label = context.dataset.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        if (context.parsed.y !== null) {
+                                            label += context.parsed.y;
+                                        }
+                                        return label;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            function init() {
+                renderPhaseFilters();
+                updateView();
+                createChart();
+            }
+
+            init();
+        });
+    </script>
+</body>
+
+</html>
